@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Whatnot EV Tracker</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --card-bg: #1e1e1e;
+            --primary: #4CAF50;
+            --secondary: #2196F3;
+            --danger: #f44336;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h2, h3 { text-align: center; margin-top: 0; }
+        
+        /* Buttons */
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.8; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; padding: 15px; font-size: 18px; margin-top: 20px;}
+        .btn-secondary { background-color: var(--secondary); color: white; margin-bottom: 15px;}
+        .btn-miss { background-color: #555; color: white; width: 100%; padding: 15px;}
+        .btn-hit { background-color: var(--primary); color: white; padding: 15px;}
+        .btn-remove-row { background-color: var(--danger); color: white; padding: 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;}
+
+        /* Inputs */
+        input[type="number"], select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: white;
+        }
+        
+        /* Setup View Styles */
+        .setup-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            background-color: #2a2a35;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .setup-row input { flex: 1; }
+        
+        /* Tracker View Styles */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .stat-box { background-color: #2c2c2c; padding: 15px; border-radius: 8px; }
+        .stat-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+        .text-green { color: var(--primary); }
+        .text-red { color: var(--danger); }
+        
+        .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #444; }
+        .input-group { display: flex; gap: 10px; align-items: center; }
+        .input-group select { flex-grow: 1; }
+        
+        .personal-ledger { background-color: #2a2a35; padding: 15px; border-radius: 8px; }
+        .ledger-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
+        .toggle-group { display: flex; align-items: center; gap: 10px; margin-top: 10px; background-color: #333; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Wheel EV Tracker</h2>
+    
+    <!-- ========================================== -->
+    <!-- VIEW 1: CONFIGURATION MENU                 -->
+    <!-- ========================================== -->
+    <div id="setup-view">
+        <p style="text-align: center; color: #aaa;">Enter the wheel inventory below to start tracking.</p>
+        
+        <h3>The Floor (Misses)</h3>
+        <div class="setup-row">
+            <input type="number" id="miss-qty" placeholder="Quantity (e.g. 200)" min="1">
+            <input type="number" id="miss-val" placeholder="Value (e.g. 2)" min="0" step="0.01">
+        </div>
+
+        <h3 style="margin-top: 20px;">The Ceiling (Hits)</h3>
+        <button class="btn-secondary" onclick="addHitRow()">+ Add Another Hit Tier</button>
+        
+        <div id="hits-container">
+            <!-- JavaScript will inject rows here -->
+        </div>
+
+        <div class="setup-row" style="margin-top: 20px; background-color: transparent;">
+            <label for="safety-margin">Safety Margin for Max Bid (%):</label>
+            <input type="number" id="safety-margin" value="25" min="0" max="100" style="width: 80px;">
+        </div>
+
+        <button class="btn-primary" onclick="startTracker()">Start Tracking Wheel</button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: LIVE TRACKER DASHBOARD             -->
+    <!-- ========================================== -->
+    <div id="tracker-view" style="display: none;">
+        
+        <div class="dashboard">
+            <div class="stat-box">
+                <div>Current EV</div>
+                <div id="current-ev" class="stat-value text-green">$0.00</div>
+                <div style="font-size: 12px; margin-top: 5px;">Items Left: <span id="items-left">0</span></div>
+            </div>
+            <div class="stat-box">
+                <div>Max Bid</div>
+                <div id="max-bid" class="stat-value text-green">$0.00</div>
+                <div style="font-size: 12px; margin-top: 5px;">Includes <span id="display-margin">0</span>% Safety Buffer</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-miss" id="btn-miss-tracker" onclick="processMiss()">Remove Miss</button>
+            
+            <div class="input-group">
+                <select id="hit-value">
+                    <option value="" disabled selected>Select a Hit Value...</option>
+                    <!-- JavaScript will inject dropdown options here -->
+                </select>
+                <button class="btn-hit" onclick="processHit()">Remove Hit</button>
+            </div>
+
+            <div class="toggle-group">
+                <input type="checkbox" id="i-won-checkbox" style="width: 20px; height: 20px;">
+                <label for="i-won-checkbox">I won this spin!</label>
+                <input type="number" id="my-bid-amount" placeholder="My Bid ($)" style="width: 100px;">
+            </div>
+        </div>
+
+        <div class="personal-ledger">
+            <h3>My Session PnL</h3>
+            <div class="ledger-grid">
+                <div>
+                    <div style="font-size: 12px;">Total Spent</div>
+                    <div id="total-spent" style="font-weight: bold; font-size: 18px;">$0</div>
+                </div>
+                <div>
+                    <div style="font-size: 12px;">Value Won</div>
+                    <div id="value-won" style="font-weight: bold; font-size: 18px;">$0</div>
+                </div>
+                <div>
+                    <div style="font-size: 12px;">Net PnL</div>
+                    <div id="net-pnl" style="font-weight: bold; font-size: 18px;">$0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Reset Button -->
+        <button style="width: 100%; margin-top: 20px; background-color: #333; color: white;" onclick="location.reload()">Start New Session (Reset)</button>
+    </div>
+
+</div>
+
+<script>
+    // --- STATE VARIABLES ---
+    let wheelPool = [];
+    let marginMultiplier = 0.75; 
+    let missItemValue = 0;
+    
+    let mySpent = 0;
+    let myValueWon = 0;
+
+    // --- SETUP LOGIC ---
+    
+    // Add default row on load
+    window.onload = function() {
+        addHitRow();
+        addHitRow(); // Start with two hit rows for convenience
+    };
+
+    function addHitRow() {
+        const container = document.getElementById('hits-container');
+        const rowId = 'hit-row-' + Date.now(); // Unique ID for deletion
+        
+        const rowHtml = `
+            <div class="setup-row" id="${rowId}">
+                <input type="number" class="hit-qty-input" placeholder="Quantity (e.g. 10)" min="1">
+                <input type="number" class="hit-val-input" placeholder="Value (e.g. 60)" min="0" step="0.01">
+                <button class="btn-remove-row" onclick="removeHitRow('${rowId}')">X</button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', rowHtml);
+    }
+
+    function removeHitRow(rowId) {
+        document.getElementById(rowId).remove();
+    }
+
+    function startTracker() {
+        wheelPool = []; // Reset pool
+        let uniqueHits = new Set(); // To populate dropdown without duplicates
+
+        // 1. Process Misses
+        const missQty = parseInt(document.getElementById('miss-qty').value) || 0;
+        missItemValue = parseFloat(document.getElementById('miss-val').value) || 0;
+        
+        for (let i = 0; i < missQty; i++) {
+            wheelPool.push(missItemValue);
+        }
+
+        // Update the Miss button text on the tracker
+        document.getElementById('btn-miss-tracker').innerText = `Remove Miss ($${missItemValue})`;
+
+        // 2. Process Hits
+        const hitQtys = document.getElementsByClassName('hit-qty-input');
+        const hitVals = document.getElementsByClassName('hit-val-input');
+
+        for (let i = 0; i < hitQtys.length; i++) {
+            let qty = parseInt(hitQtys[i].value) || 0;
+            let val = parseFloat(hitVals[i].value) || 0;
+
+            if (qty > 0 && val > 0) {
+                uniqueHits.add(val); // Save for dropdown
+                for (let j = 0; j < qty; j++) {
+                    wheelPool.push(val);
+                }
+            }
+        }
+
+        // Validate that something was entered
+        if (wheelPool.length === 0) {
+            alert("Please enter at least some items to start!");
+            return;
+        }
+
+        // 3. Setup Dropdown Options
+        const hitSelect = document.getElementById('hit-value');
+        hitSelect.innerHTML = '<option value="" disabled selected>Select a Hit Value...</option>'; // Reset
+        
+        // Sort hit values from highest to lowest for the dropdown
+        let sortedHits = Array.from(uniqueHits).sort((a, b) => b - a);
+        sortedHits.forEach(val => {
+            hitSelect.innerHTML += `<option value="${val}">$${val} Hit</option>`;
+        });
+
+        // 4. Set Safety Margin
+        const marginInput = parseFloat(document.getElementById('safety-margin').value) || 0;
+        document.getElementById('display-margin').innerText = marginInput;
+        marginMultiplier = (100 - marginInput) / 100;
+
+        // 5. Swap UI Views
+        document.getElementById('setup-view').style.display = 'none';
+        document.getElementById('tracker-view').style.display = 'block';
+
+        // 6. Run Initial Math
+        updateDashboard();
+    }
+
+    // --- TRACKER LOGIC ---
+
+    function updateDashboard() {
+        if (wheelPool.length === 0) {
+            alert("The wheel is empty! The session is over.");
+            return;
+        }
+
+        const totalValue = wheelPool.reduce((sum, val) => sum + val, 0);
+        const currentEV = totalValue / wheelPool.length;
+        const maxBid = currentEV * marginMultiplier;
+
+        document.getElementById('current-ev').innerText = `$${currentEV.toFixed(2)}`;
+        document.getElementById('max-bid').innerText = `$${maxBid.toFixed(2)}`;
+        document.getElementById('items-left').innerText = wheelPool.length;
+
+        document.getElementById('total-spent').innerText = `$${mySpent.toFixed(2)}`;
+        document.getElementById('value-won').innerText = `$${myValueWon.toFixed(2)}`;
+        
+        let net = myValueWon - mySpent;
+        let pnlElement = document.getElementById('net-pnl');
+        pnlElement.innerText = `$${net.toFixed(2)}`;
+        
+        if (net > 0) { pnlElement.className = "text-green"; } 
+        else if (net < 0) { pnlElement.className = "text-red"; } 
+        else { pnlElement.className = ""; }
+    }
+
+    function removeValueFromPool(valToRemove) {
+        const index = wheelPool.indexOf(valToRemove);
+        if (index > -1) {
+            wheelPool.splice(index, 1);
+        } else {
+            console.log(`Value ${valToRemove} not found in array. Removing closest highest match.`);
+            wheelPool.sort((a,b) => a - b);
+            wheelPool.pop(); 
+        }
+    }
+
+    function checkPersonalWin(itemValue) {
+        const iWonCheckbox = document.getElementById('i-won-checkbox');
+        const bidInput = document.getElementById('my-bid-amount');
+
+        if (iWonCheckbox.checked) {
+            const bidPaid = parseFloat(bidInput.value) || 0;
+            mySpent += bidPaid;
+            myValueWon += itemValue;
+            
+            iWonCheckbox.checked = false;
+            bidInput.value = "";
+        }
+    }
+
+    function processMiss() {
+        removeValueFromPool(missItemValue);
+        checkPersonalWin(missItemValue);
+        updateDashboard();
+    }
+
+    function processHit() {
+        const hitSelect = document.getElementById('hit-value');
+        const hitValue = parseFloat(hitSelect.value);
+
+        if (!hitValue) {
+            alert("Please select a hit value from the dropdown.");
+            return;
+        }
+
+        removeValueFromPool(hitValue);
+        checkPersonalWin(hitValue);
+        updateDashboard();
+        
+        hitSelect.value = ""; // Reset dropdown
+    }
+</script>
+</body>
+</html>
