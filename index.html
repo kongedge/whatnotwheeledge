@@ -168,13 +168,17 @@
             </div>
         </div>
         
-        <button style="width: 100%; margin-top: 20px; background-color: #333; color: white;" onclick="location.reload()">Reset Session</button>
+        <!-- Multi-Option Reset Buttons -->
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button style="flex: 1; background-color: #444; color: white;" onclick="editWheel(false)">Edit Current Wheel</button>
+            <button style="flex: 1; background-color: #f44336; color: white;" onclick="editWheel(true)">Start New Wheel</button>
+        </div>
     </div>
 </div>
 
 <script>
     // ==========================================
-    // 1. THE MASTER CATALOG (Updated!)
+    // 1. THE MASTER CATALOG
     // ==========================================
     const MASTER_CATALOG = [
         { alias: "Twilight ETB", value: 92 },
@@ -197,16 +201,13 @@
     // ==========================================
     // 2. STATE VARIABLES
     // ==========================================
-    let inventory = {
-        misses: { alias: "Floor Miss", value: 2, qty: 0 },
-        hits: {} 
-    };
-    
-    let setupRowCount = 0; // Fixes the ID bug
+    let inventory = { misses: { alias: "Floor Miss", value: 2, qty: 0 }, hits: {} };
+    let setupRowCount = 0; 
     let marginMultiplier = 0.75; 
     let mySpent = 0;
     let myValueWon = 0;
     let currentMissStreak = 0;
+    let streakHistoryStack = []; 
     let currentEVValue = 0;
 
     // ==========================================
@@ -257,10 +258,36 @@
         document.getElementById(rowId).remove();
     }
 
+    // NEW: Handle toggling back to setup
+    function editWheel(resetAll) {
+        if (resetAll) {
+            if (!confirm("Are you sure you want to start a new wheel? This will reset your PnL and Streaks.")) return;
+            
+            // Hard reset the session data
+            mySpent = 0;
+            myValueWon = 0;
+            currentMissStreak = 0;
+            streakHistoryStack = [];
+            
+            // Clear inputs in the tracker
+            document.getElementById('live-stream-price').value = "";
+            document.getElementById('i-won-checkbox').checked = false;
+            document.getElementById('my-bid-amount').value = "";
+            highlightWinZone();
+        }
+
+        document.getElementById('tracker-view').style.display = 'none';
+        document.getElementById('setup-view').style.display = 'block';
+        window.scrollTo(0, 0); 
+    }
+
     function startTracker() {
         inventory.misses.qty = parseInt(document.getElementById('miss-qty').value) || 0;
         inventory.misses.value = parseFloat(document.getElementById('miss-val').value) || 0;
         inventory.misses.alias = document.getElementById('miss-alias').value;
+
+        // Reset internal hits array so it doesn't duplicate if edited
+        inventory.hits = {};
 
         const selects = document.getElementsByClassName('hit-alias-select');
         const hitQtys = document.getElementsByClassName('hit-qty-input');
@@ -291,13 +318,12 @@
     }
 
     // ==========================================
-    // 4. INTERACTIVE INVENTORY LOGIC
+    // 4. INTERACTIVE INVENTORY LOGIC (WITH STREAK MEMORY)
     // ==========================================
     function modifyInventory(itemKey, change) {
         let item;
         let isHit = false;
 
-        // Determine if we are modifying a hit or a miss
         if (itemKey === 'misses') {
             item = inventory.misses;
         } else {
@@ -306,25 +332,24 @@
         }
 
         if (!item) return;
-
-        // Prevent dropping below 0
         if (change === -1 && item.qty <= 0) return;
 
-        // Apply Change
         item.qty += change;
 
-        // --- HANDLE STREAKS AND WINS (Only on deductions) ---
         if (change === -1) {
             if (isHit) {
-                currentMissStreak = 0; // Reset streak on hit
+                streakHistoryStack.push(currentMissStreak); 
+                currentMissStreak = 0; 
             } else {
-                currentMissStreak++; // Increase streak on miss
+                currentMissStreak++; 
             }
-            checkPersonalWin(item.value); // Process if they won it
+            checkPersonalWin(item.value); 
         } else if (change === 1) {
-            // If it's an undo (+1), rollback the miss streak if applicable
-            if (!isHit && currentMissStreak > 0) {
-                currentMissStreak--;
+            if (isHit) {
+                let recoveredStreak = streakHistoryStack.pop() || 0;
+                currentMissStreak += recoveredStreak; 
+            } else {
+                currentMissStreak = Math.max(0, currentMissStreak - 1);
             }
         }
 
@@ -354,17 +379,14 @@
         let totalValue = 0;
         let totalItems = 0;
 
-        // Tally Misses
         totalValue += (inventory.misses.qty * inventory.misses.value);
         totalItems += inventory.misses.qty;
 
-        // Tally Hits
         for (let alias in inventory.hits) {
             totalValue += (inventory.hits[alias].qty * inventory.hits[alias].value);
             totalItems += inventory.hits[alias].qty;
         }
 
-        // EV Math
         if (totalItems <= 0) {
             currentEVValue = 0;
             document.getElementById('items-left').innerText = "0";
@@ -377,12 +399,10 @@
         document.getElementById('current-ev').innerText = `$${currentEVValue.toFixed(2)}`;
         document.getElementById('max-bid').innerText = `$${maxBid.toFixed(2)}`;
         
-        // Update Big Miss Button
         let bigMissBtn = document.getElementById('btn-big-miss');
         bigMissBtn.innerText = `Remove 1 Miss (${inventory.misses.qty} Left) [Shortcut: M]`;
         bigMissBtn.disabled = inventory.misses.qty === 0;
 
-        // Render Inventory Board
         let invHtml = '';
         invHtml += createInventoryRowHTML('misses', inventory.misses.alias, inventory.misses.value, inventory.misses.qty);
         
@@ -392,7 +412,6 @@
         });
         document.getElementById('inventory-list').innerHTML = invHtml;
 
-        // Update Ledger & Streak
         document.getElementById('total-spent').innerText = `$${mySpent.toFixed(2)}`;
         document.getElementById('value-won').innerText = `$${myValueWon.toFixed(2)}`;
         let net = myValueWon - mySpent;
@@ -432,7 +451,6 @@
             mySpent += bidPaid;
             myValueWon += itemValue;
             
-            // Auto-reset the toggle
             iWonCheckbox.checked = false;
             bidInput.value = "";
             highlightWinZone();
