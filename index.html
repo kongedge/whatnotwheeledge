@@ -30,10 +30,10 @@
         
         button { padding: 10px 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: opacity 0.2s; }
         button:hover { opacity: 0.8; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        
         .btn-primary { background-color: var(--primary); color: white; width: 100%; padding: 15px; font-size: 18px; margin-top: 20px;}
         .btn-secondary { background-color: var(--secondary); color: white; margin-bottom: 15px;}
-        .btn-danger { background-color: var(--danger); color: white;}
-        .btn-undo { background-color: #444; color: white; border: 1px solid #777; font-size: 14px;}
         .btn-remove-row { background-color: var(--danger); color: white; padding: 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;}
 
         input[type="number"], input[type="text"], select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #555; background-color: #333; color: white; }
@@ -43,7 +43,7 @@
         .setup-row select { flex: 2; }
         .setup-row input { flex: 1; }
         
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; text-align: center; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; text-align: center; }
         .stat-box { background-color: #2c2c2c; padding: 15px; border-radius: 8px; }
         .stat-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
         .text-green { color: var(--primary); }
@@ -51,20 +51,28 @@
         .text-yellow { color: var(--warning); }
         
         .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #444; }
-        .action-group { display: flex; gap: 10px; align-items: center; background-color: #2a2a35; padding: 10px; border-radius: 5px;}
-        .action-group button { flex: 1; }
-        .action-group select { flex: 2; }
-        
         .personal-ledger { background-color: #2a2a35; padding: 15px; border-radius: 8px; }
         .ledger-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
-        .toggle-group { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; background-color: #333; padding: 10px; border-radius: 5px; }
+        .toggle-group { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; background-color: #333; padding: 15px; border-radius: 5px; border: 2px solid transparent; transition: border 0.3s;}
+        .toggle-group.active { border: 2px solid var(--primary); background-color: rgba(76, 175, 80, 0.1); }
         .streak-container { text-align: center; margin-bottom: 15px; font-size: 16px; background-color: #1a1a1a; padding: 10px; border-radius: 5px;}
         
-        /* New Inventory Board Styles */
+        /* Interactive Inventory Board Styles */
         .inventory-board { background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
-        .inventory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; margin-top: 10px; }
-        .inv-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; }
-        .inv-item.empty { color: #777; text-decoration: line-through; }
+        .inventory-grid { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background-color: #2c2c2c; border-radius: 5px; }
+        .inv-item.empty { opacity: 0.5; }
+        .inv-item.empty .inv-name { text-decoration: line-through; }
+        .inv-name { flex: 1; font-size: 16px; font-weight: bold; }
+        .inv-val { color: #aaa; font-size: 14px; font-weight: normal; margin-left: 5px;}
+        .inv-actions { display: flex; align-items: center; gap: 12px; }
+        .btn-inv { width: 35px; height: 35px; border-radius: 5px; border: none; font-weight: bold; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .btn-inv-minus { background-color: var(--danger); color: white; }
+        .btn-inv-plus { background-color: #444; color: white; }
+        .inv-qty { font-size: 20px; font-weight: bold; width: 35px; text-align: center; }
+        
+        /* Big Miss Button */
+        .btn-big-miss { background-color: #555; color: white; width: 100%; padding: 20px; font-size: 20px; margin-bottom: 15px; border: 2px solid #777;}
     </style>
 </head>
 <body>
@@ -80,7 +88,7 @@
         
         <h3>The Floor (Misses)</h3>
         <div class="setup-row">
-            <input type="text" id="miss-alias" value="Floor / Miss" readonly style="flex: 2;">
+            <input type="text" id="miss-alias" value="Korean Packs / Miss" readonly style="flex: 2;">
             <input type="number" id="miss-qty" placeholder="Qty (e.g. 200)" min="1">
             <input type="number" id="miss-val" placeholder="Value ($)" min="0" step="0.01">
         </div>
@@ -113,7 +121,7 @@
             <div class="stat-box">
                 <div>Current EV</div>
                 <div id="current-ev" class="stat-value text-green">$0.00</div>
-                <div style="font-size: 12px; margin-top: 5px;">Total Items Left: <span id="items-left" style="font-weight:bold;">0</span></div>
+                <div style="font-size: 12px; margin-top: 5px;">Items Left: <span id="items-left" style="font-weight:bold;">0</span></div>
             </div>
             <div class="stat-box">
                 <div>Max Bid</div>
@@ -131,37 +139,23 @@
             </div>
         </div>
 
-        <!-- NEW: Live Inventory Board -->
-        <div class="inventory-board">
-            <h3 style="margin: 0; font-size: 16px; border-bottom: 1px solid #555; padding-bottom: 5px;">Live Inventory Board</h3>
-            <div class="inventory-grid" id="inventory-list">
-                <!-- JavaScript populates this list -->
-            </div>
+        <!-- Personal Win Setup -->
+        <div class="toggle-group" id="win-zone">
+            <input type="checkbox" id="i-won-checkbox" style="width: 20px; height: 20px;" onchange="highlightWinZone()">
+            <label for="i-won-checkbox" style="font-weight: bold; font-size: 18px;">I won the next spin!</label>
+            <input type="number" id="my-bid-amount" placeholder="My Bid ($)" style="width: 100px;">
         </div>
 
-        <div class="controls">
-            <!-- Miss Controls -->
-            <div class="action-group" style="background-color: #333;">
-                <button class="btn-danger" style="flex: 3; padding: 15px;" id="btn-miss-tracker" onclick="processMiss()">Remove 1 Miss (Shortcut: M)</button>
-                <button class="btn-undo" onclick="undoMiss()">+ Add Miss (Fix)</button>
-            </div>
-            
-            <!-- Hit Controls -->
-            <div class="action-group">
-                <select id="hit-value" style="flex: 2;">
-                    <!-- Dropdown populated by JS -->
-                </select>
-                <div style="display: flex; flex-direction: column; gap: 5px; flex: 1;">
-                    <button class="btn-primary" onclick="processHit()">Remove Hit</button>
-                    <button class="btn-undo" onclick="undoHit()">+ Add Back</button>
-                </div>
-            </div>
+        <!-- Fast Miss Button -->
+        <button class="btn-big-miss" id="btn-big-miss" onclick="modifyInventory('misses', -1)">
+            Remove 1 Miss (Shortcut: M)
+        </button>
 
-            <!-- Personal Ledger Input -->
-            <div class="toggle-group">
-                <input type="checkbox" id="i-won-checkbox" style="width: 20px; height: 20px;">
-                <label for="i-won-checkbox">I won this!</label>
-                <input type="number" id="my-bid-amount" placeholder="My Bid ($)" style="width: 100px;">
+        <!-- Interactive Inventory Board -->
+        <div class="inventory-board">
+            <h3 style="margin: 0; font-size: 18px; border-bottom: 1px solid #555; padding-bottom: 10px; margin-bottom: 10px;">Live Inventory</h3>
+            <div class="inventory-grid" id="inventory-list">
+                <!-- JavaScript populates this list -->
             </div>
         </div>
 
@@ -180,7 +174,7 @@
 
 <script>
     // ==========================================
-    // 1. THE MASTER CATALOG (Edit this!)
+    // 1. THE MASTER CATALOG (Updated!)
     // ==========================================
     const MASTER_CATALOG = [
         { alias: "Twilight ETB", value: 92 },
@@ -208,6 +202,7 @@
         hits: {} 
     };
     
+    let setupRowCount = 0; // Fixes the ID bug
     let marginMultiplier = 0.75; 
     let mySpent = 0;
     let myValueWon = 0;
@@ -231,8 +226,9 @@
     }
 
     function addHitRow() {
+        setupRowCount++; 
         const container = document.getElementById('hits-container');
-        const rowId = 'hit-row-' + Date.now(); 
+        const rowId = 'hit-row-' + setupRowCount; 
         
         const rowHtml = `
             <div class="setup-row" id="${rowId}">
@@ -295,22 +291,80 @@
     }
 
     // ==========================================
-    // 4. TRACKER & MATH LOGIC
+    // 4. INTERACTIVE INVENTORY LOGIC
+    // ==========================================
+    function modifyInventory(itemKey, change) {
+        let item;
+        let isHit = false;
+
+        // Determine if we are modifying a hit or a miss
+        if (itemKey === 'misses') {
+            item = inventory.misses;
+        } else {
+            item = inventory.hits[itemKey];
+            isHit = true;
+        }
+
+        if (!item) return;
+
+        // Prevent dropping below 0
+        if (change === -1 && item.qty <= 0) return;
+
+        // Apply Change
+        item.qty += change;
+
+        // --- HANDLE STREAKS AND WINS (Only on deductions) ---
+        if (change === -1) {
+            if (isHit) {
+                currentMissStreak = 0; // Reset streak on hit
+            } else {
+                currentMissStreak++; // Increase streak on miss
+            }
+            checkPersonalWin(item.value); // Process if they won it
+        } else if (change === 1) {
+            // If it's an undo (+1), rollback the miss streak if applicable
+            if (!isHit && currentMissStreak > 0) {
+                currentMissStreak--;
+            }
+        }
+
+        updateDashboard();
+    }
+
+    function createInventoryRowHTML(itemKey, alias, value, qty) {
+        let emptyClass = qty === 0 ? "empty" : "";
+        let minusDisabled = qty === 0 ? "disabled" : "";
+        
+        return `
+            <div class="inv-item ${emptyClass}">
+                <div class="inv-name">${alias} <span class="inv-val">($${value})</span></div>
+                <div class="inv-actions">
+                    <button class="btn-inv btn-inv-minus" onclick="modifyInventory('${itemKey}', -1)" ${minusDisabled}>-</button>
+                    <div class="inv-qty">${qty}</div>
+                    <button class="btn-inv btn-inv-plus" onclick="modifyInventory('${itemKey}', 1)">+</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // ==========================================
+    // 5. DASHBOARD RENDER & MATH
     // ==========================================
     function updateDashboard() {
         let totalValue = 0;
         let totalItems = 0;
 
-        // Add Misses
+        // Tally Misses
         totalValue += (inventory.misses.qty * inventory.misses.value);
         totalItems += inventory.misses.qty;
 
-        // Add Hits
+        // Tally Hits
         for (let alias in inventory.hits) {
             totalValue += (inventory.hits[alias].qty * inventory.hits[alias].value);
             totalItems += inventory.hits[alias].qty;
         }
 
+        // EV Math
         if (totalItems <= 0) {
             currentEVValue = 0;
             document.getElementById('items-left').innerText = "0";
@@ -322,39 +376,23 @@
         const maxBid = currentEVValue * marginMultiplier;
         document.getElementById('current-ev').innerText = `$${currentEVValue.toFixed(2)}`;
         document.getElementById('max-bid').innerText = `$${maxBid.toFixed(2)}`;
-        document.getElementById('btn-miss-tracker').innerText = `Remove 1 Miss ($${inventory.misses.value})`;
+        
+        // Update Big Miss Button
+        let bigMissBtn = document.getElementById('btn-big-miss');
+        bigMissBtn.innerText = `Remove 1 Miss (${inventory.misses.qty} Left) [Shortcut: M]`;
+        bigMissBtn.disabled = inventory.misses.qty === 0;
 
-        // --- UPDATE INVENTORY BOARD ---
+        // Render Inventory Board
         let invHtml = '';
+        invHtml += createInventoryRowHTML('misses', inventory.misses.alias, inventory.misses.value, inventory.misses.qty);
         
-        // Render Misses
-        let missClass = inventory.misses.qty === 0 ? "empty" : "";
-        invHtml += `<div class="inv-item ${missClass}"><span>${inventory.misses.alias} ($${inventory.misses.value})</span> <strong>${inventory.misses.qty}</strong></div>`;
-        
-        // Render Hits (Sort by highest value first)
         let sortedHits = Object.keys(inventory.hits).sort((a, b) => inventory.hits[b].value - inventory.hits[a].value);
-        
         sortedHits.forEach(alias => {
-            let hit = inventory.hits[alias];
-            let hitClass = hit.qty === 0 ? "empty" : "";
-            invHtml += `<div class="inv-item ${hitClass}"><span>${alias} ($${hit.value})</span> <strong>${hit.qty}</strong></div>`;
+            invHtml += createInventoryRowHTML(alias, alias, inventory.hits[alias].value, inventory.hits[alias].qty);
         });
-        
         document.getElementById('inventory-list').innerHTML = invHtml;
 
-        // --- UPDATE DROPDOWN ---
-        const hitSelect = document.getElementById('hit-value');
-        const currentSelection = hitSelect.value; 
-        
-        hitSelect.innerHTML = '<option value="" disabled selected>Select a Hit... (Shortcut: H)</option>';
-        for (let alias in inventory.hits) {
-            if (inventory.hits[alias].qty > 0) {
-                let selectedAttr = (alias === currentSelection) ? "selected" : "";
-                hitSelect.innerHTML += `<option value="${alias}" ${selectedAttr}>${alias} ($${inventory.hits[alias].value})</option>`;
-            }
-        }
-
-        // --- UPDATE LEDGER & STREAK ---
+        // Update Ledger & Streak
         document.getElementById('total-spent').innerText = `$${mySpent.toFixed(2)}`;
         document.getElementById('value-won').innerText = `$${myValueWon.toFixed(2)}`;
         let net = myValueWon - mySpent;
@@ -371,6 +409,20 @@
         checkDeal();
     }
 
+    // ==========================================
+    // 6. PERSONAL WIN LOGIC
+    // ==========================================
+    function highlightWinZone() {
+        const zone = document.getElementById('win-zone');
+        const isChecked = document.getElementById('i-won-checkbox').checked;
+        if (isChecked) {
+            zone.classList.add('active');
+            document.getElementById('my-bid-amount').focus();
+        } else {
+            zone.classList.remove('active');
+        }
+    }
+
     function checkPersonalWin(itemValue) {
         const iWonCheckbox = document.getElementById('i-won-checkbox');
         const bidInput = document.getElementById('my-bid-amount');
@@ -379,56 +431,16 @@
             const bidPaid = parseFloat(bidInput.value) || 0;
             mySpent += bidPaid;
             myValueWon += itemValue;
+            
+            // Auto-reset the toggle
             iWonCheckbox.checked = false;
             bidInput.value = "";
+            highlightWinZone();
         }
     }
 
     // ==========================================
-    // 5. REMOVE & UNDO BUTTON ACTIONS
-    // ==========================================
-    function processMiss() {
-        if (inventory.misses.qty > 0) {
-            inventory.misses.qty--;
-            currentMissStreak++;
-            checkPersonalWin(inventory.misses.value);
-            updateDashboard();
-        }
-    }
-
-    function undoMiss() {
-        inventory.misses.qty++;
-        if(currentMissStreak > 0) currentMissStreak--;
-        updateDashboard();
-    }
-
-    function processHit() {
-        const alias = document.getElementById('hit-value').value;
-        if (!alias) { alert("Please select a hit value from the dropdown."); return; }
-
-        if (inventory.hits[alias] && inventory.hits[alias].qty > 0) {
-            inventory.hits[alias].qty--;
-            currentMissStreak = 0; 
-            checkPersonalWin(inventory.hits[alias].value);
-            updateDashboard();
-        }
-    }
-
-    function undoHit() {
-        const alias = document.getElementById('hit-value').value;
-        if (!alias) { 
-            alert("Select the hit you accidentally removed from the dropdown, then click Add Back."); 
-            return; 
-        }
-        
-        if (inventory.hits[alias]) {
-            inventory.hits[alias].qty++;
-            updateDashboard();
-        }
-    }
-
-    // ==========================================
-    // 6. LIVE DEAL CHECKER
+    // 7. LIVE DEAL CHECKER
     // ==========================================
     function checkDeal() {
         const streamPrice = parseFloat(document.getElementById('live-stream-price').value);
@@ -452,17 +464,13 @@
     }
 
     // ==========================================
-    // 7. KEYBOARD SHORTCUTS
+    // 8. KEYBOARD SHORTCUTS
     // ==========================================
     document.addEventListener('keydown', function(event) {
         if (document.getElementById('tracker-view').style.display === 'block') {
             const activeTag = document.activeElement.tagName.toLowerCase();
-            if (activeTag !== 'input' && activeTag !== 'select') {
-                if (event.key.toLowerCase() === 'm') processMiss();
-                if (event.key.toLowerCase() === 'h') {
-                    event.preventDefault(); 
-                    document.getElementById('hit-value').focus();
-                }
+            if (activeTag !== 'input') {
+                if (event.key.toLowerCase() === 'm') modifyInventory('misses', -1);
             }
         }
     });
