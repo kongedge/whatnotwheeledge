@@ -13,18 +13,8 @@
             --secondary: #2196F3;
             --danger: #f44336;
             --warning: #ff9800;
-            --gray: #555555;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 650px; background-color: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         h2, h3 { text-align: center; margin-top: 0; }
         
@@ -33,17 +23,17 @@
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         
         .btn-primary { background-color: var(--primary); color: white; width: 100%; padding: 15px; font-size: 18px; margin-top: 20px;}
-        .btn-secondary { background-color: var(--secondary); color: white; margin-bottom: 15px;}
-        .btn-remove-row { background-color: var(--danger); color: white; padding: 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;}
-
+        .btn-secondary { background-color: var(--secondary); color: white;}
+        .btn-danger { background-color: var(--danger); color: white;}
+        .btn-small { padding: 8px 10px; font-size: 14px; }
+        
         input[type="number"], input[type="text"], select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #555; background-color: #333; color: white; }
-        input[readonly] { background-color: #222; color: #aaa; cursor: not-allowed; }
+        input[readonly] { background-color: transparent; border: none; color: #ccc; font-weight: bold; padding-left: 0;}
+        input[readonly].val-display { color: #888; font-weight: normal; text-align: right; }
         
-        .setup-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background-color: #2a2a35; padding: 10px; border-radius: 5px; }
-        .setup-row select { flex: 2; }
-        .setup-row input { flex: 1; }
+        .setup-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; background-color: #2a2a35; padding: 8px 12px; border-radius: 5px; }
+        .template-manager { background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
         
-        /* Dashboard Grid Updated to 3 columns */
         .dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px; text-align: center; }
         .stat-box { background-color: #2c2c2c; padding: 15px; border-radius: 8px; }
         .stat-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
@@ -52,14 +42,12 @@
         .text-yellow { color: var(--warning); }
         .text-secondary { color: var(--secondary); }
         
-        .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #444; }
-        .personal-ledger { background-color: #2a2a35; padding: 15px; border-radius: 8px; }
+        .personal-ledger { background-color: #2a2a35; padding: 15px; border-radius: 8px; margin-top: 20px;}
         .ledger-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
         .toggle-group { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; background-color: #333; padding: 15px; border-radius: 5px; border: 2px solid transparent; transition: border 0.3s;}
         .toggle-group.active { border: 2px solid var(--primary); background-color: rgba(76, 175, 80, 0.1); }
         .streak-container { text-align: center; margin-bottom: 15px; font-size: 16px; background-color: #1a1a1a; padding: 10px; border-radius: 5px;}
         
-        /* Interactive Inventory Board Styles */
         .inventory-board { background-color: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
         .inventory-grid { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background-color: #2c2c2c; border-radius: 5px; }
@@ -73,7 +61,6 @@
         .btn-inv-plus { background-color: #444; color: white; }
         .inv-qty { font-size: 20px; font-weight: bold; width: 35px; text-align: center; }
         
-        /* Big Miss Button */
         .btn-big-miss { background-color: #555; color: white; width: 100%; padding: 20px; font-size: 20px; margin-bottom: 15px; border: 2px solid #777;}
     </style>
 </head>
@@ -86,20 +73,46 @@
     <!-- VIEW 1: CONFIGURATION MENU                 -->
     <!-- ========================================== -->
     <div id="setup-view">
-        <p style="text-align: center; color: #aaa;">Select items from your hardcoded catalog.</p>
+        
+        <!-- TEMPLATE MANAGER -->
+        <div class="template-manager">
+            <h3 style="margin-top: 0; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px;">Saved Profiles</h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="template-select" style="flex: 2;">
+                    <option value="">-- Load a Saved Template --</option>
+                </select>
+                <button class="btn-secondary" onclick="loadTemplate()" style="flex: 1; margin: 0; padding: 10px;">Load</button>
+                <button class="btn-danger" onclick="deleteTemplate()" style="flex: 1; margin: 0; padding: 10px;">Delete</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="new-template-name" placeholder="Save as new (e.g. Streamer A)" style="flex: 2;">
+                <button onclick="saveTemplate()" style="background-color: var(--primary); color: white; flex: 1;">Save</button>
+            </div>
+
+            <!-- NEW: EXPORT & IMPORT -->
+            <div style="display: flex; gap: 10px; border-top: 1px solid #444; padding-top: 15px;">
+                <button class="btn-secondary btn-small" onclick="exportTemplates()" style="flex: 1; background-color: #555;">📤 Export Sync Code</button>
+                <button class="btn-secondary btn-small" onclick="importTemplates()" style="flex: 1; background-color: #555;">📥 Import Sync Code</button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <p style="color: #aaa; margin: 0;">Enter quantities. Leave at 0 if not on the wheel.</p>
+            <button onclick="clearSavedData()" style="background-color: #444; color: white; font-size: 12px; padding: 5px 10px;">Clear Auto-Save</button>
+        </div>
         
         <h3>The Floor (Misses)</h3>
-        <div class="setup-row">
-            <input type="text" id="miss-alias" value="Korean Packs / Miss" readonly style="flex: 2;">
-            <input type="number" id="miss-qty" placeholder="Qty (e.g. 200)" min="1">
-            <input type="number" id="miss-val" placeholder="Value ($)" min="0" step="0.01">
+        <div class="setup-row" style="background-color: #333; border: 1px solid #555;">
+            <input type="text" id="miss-alias" value="Korean Packs / Miss" style="flex: 2; background-color: transparent; border: none; color: white; font-weight: bold;">
+            <input type="number" id="miss-qty" placeholder="Qty" min="0" style="flex: 1;">
+            <input type="number" id="miss-val" placeholder="Val ($)" min="0" step="0.01" style="flex: 1;">
         </div>
 
         <h3 style="margin-top: 20px;">The Ceiling (Hits)</h3>
-        <button class="btn-secondary" onclick="addHitRow()">+ Add Another Hit Row</button>
-        
-        <div id="hits-container">
-            <!-- JavaScript injects rows here -->
+        <div id="catalog-setup-list">
+            <!-- JS will inject the entire catalog here -->
         </div>
 
         <div class="setup-row" style="margin-top: 20px; background-color: transparent;">
@@ -146,19 +159,16 @@
             </div>
         </div>
 
-        <!-- Personal Win Setup -->
         <div class="toggle-group" id="win-zone">
             <input type="checkbox" id="i-won-checkbox" style="width: 20px; height: 20px;" onchange="highlightWinZone()">
             <label for="i-won-checkbox" style="font-weight: bold; font-size: 18px;">I won the next spin!</label>
             <input type="number" id="my-bid-amount" placeholder="My Bid ($)" style="width: 100px;">
         </div>
 
-        <!-- Fast Miss Button -->
         <button class="btn-big-miss" id="btn-big-miss" onclick="modifyInventory('misses', -1)">
             Remove 1 Miss (Shortcut: M)
         </button>
 
-        <!-- Interactive Inventory Board -->
         <div class="inventory-board">
             <h3 style="margin: 0; font-size: 18px; border-bottom: 1px solid #555; padding-bottom: 10px; margin-bottom: 10px;">Live Inventory</h3>
             <div class="inventory-grid" id="inventory-list">
@@ -175,7 +185,6 @@
             </div>
         </div>
         
-        <!-- Multi-Option Reset Buttons -->
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button style="flex: 1; background-color: #444; color: white;" onclick="editWheel(false)">Edit Current Wheel</button>
             <button style="flex: 1; background-color: #f44336; color: white;" onclick="editWheel(true)">Start New Wheel</button>
@@ -202,14 +211,18 @@
         { alias: "Prismatic Evolution ETB", value: 151 },
         { alias: "Mega Evolution ETB Gardevoir", value: 80 },
         { alias: "Team Rocket's Moltres Ex Ultra Premium Collection Box", value: 280 },
-        { alias: "Prismatic SPC", value: 288 }
+        { alias: "Prismatic SPC", value: 288 },
+        { alias: "Black Bolt ETB", value: 120 },
+        { alias: "Paradox Rift ETB Roaring Moon", value: 115 },
+        { alias: "Lost Origin ETB", value: 200 },
+        { alias: "SWSH Charizard UPC", value: 495 },
+        { alias: "Evolving Skies ETB", value: 470 }
     ];
 
     // ==========================================
     // 2. STATE VARIABLES
     // ==========================================
-    let inventory = { misses: { alias: "Floor Miss", value: 2, qty: 0 }, hits: {} };
-    let setupRowCount = 0; 
+    let inventory = { misses: { alias: "Korean Packs / Miss", value: 2, qty: 0 }, hits: {} };
     let marginMultiplier = 0.75; 
     let mySpent = 0;
     let myValueWon = 0;
@@ -218,101 +231,193 @@
     let currentEVValue = 0;
 
     // ==========================================
-    // 3. SETUP LOGIC
+    // 3. TEMPLATE MANAGER & SYNC LOGIC
     // ==========================================
-    window.onload = function() {
-        addHitRow();
-        addHitRow(); 
-    };
-
-    function getCatalogOptions() {
-        let options = `<option value="" disabled selected>Select an item...</option>`;
-        MASTER_CATALOG.forEach(item => {
-            options += `<option value="${item.alias}" data-val="${item.value}">${item.alias} ($${item.value})</option>`;
-        });
-        return options;
+    function getSavedTemplates() {
+        return JSON.parse(localStorage.getItem('wheelTemplates')) || {};
     }
 
-    function addHitRow() {
-        setupRowCount++; 
-        const container = document.getElementById('hits-container');
-        const rowId = 'hit-row-' + setupRowCount; 
-        
-        const rowHtml = `
-            <div class="setup-row" id="${rowId}">
-                <select class="hit-alias-select" onchange="autoFillValue('${rowId}')">
-                    ${getCatalogOptions()}
-                </select>
-                <input type="number" class="hit-qty-input" placeholder="Qty" min="1">
-                <input type="number" class="hit-val-input" placeholder="Val ($)" readonly>
-                <button class="btn-remove-row" onclick="removeHitRow('${rowId}')">X</button>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', rowHtml);
+    function saveTemplates(templates) {
+        localStorage.setItem('wheelTemplates', JSON.stringify(templates));
     }
 
-    function autoFillValue(rowId) {
-        const row = document.getElementById(rowId);
-        const select = row.querySelector('.hit-alias-select');
-        const valInput = row.querySelector('.hit-val-input');
-        const selectedOption = select.options[select.selectedIndex];
-        if(selectedOption.dataset.val) {
-            valInput.value = selectedOption.dataset.val;
+    function populateTemplateDropdown() {
+        const templates = getSavedTemplates();
+        const select = document.getElementById('template-select');
+        select.innerHTML = '<option value="">-- Load a Saved Template --</option>';
+        for (let name in templates) {
+            select.innerHTML += `<option value="${name}">${name}</option>`;
         }
     }
 
-    function removeHitRow(rowId) {
-        document.getElementById(rowId).remove();
+    function saveTemplate() {
+        const name = document.getElementById('new-template-name').value.trim();
+        if (!name) { alert("Please enter a name for this profile."); return; }
+        
+        let templateData = {};
+        templateData['misses_qty'] = parseInt(document.getElementById('miss-qty').value) || 0;
+        templateData['misses_val'] = parseFloat(document.getElementById('miss-val').value) || 0;
+        templateData['margin'] = parseFloat(document.getElementById('safety-margin').value) || 25;
+
+        MASTER_CATALOG.forEach((item, index) => {
+            let qty = parseInt(document.getElementById(`setup-qty-${index}`).value) || 0;
+            if (qty > 0) templateData[item.alias] = qty;
+        });
+
+        const templates = getSavedTemplates();
+        templates[name] = templateData;
+        saveTemplates(templates);
+        
+        document.getElementById('new-template-name').value = "";
+        populateTemplateDropdown();
+        alert(`Profile "${name}" saved successfully!`);
+    }
+
+    function loadTemplate() {
+        const name = document.getElementById('template-select').value;
+        if (!name) return;
+        
+        const templates = getSavedTemplates();
+        const savedData = templates[name];
+        if (!savedData) return;
+
+        document.getElementById('miss-qty').value = savedData['misses_qty'] !== undefined ? savedData['misses_qty'] : "";
+        document.getElementById('miss-val').value = savedData['misses_val'] !== undefined ? savedData['misses_val'] : "";
+        document.getElementById('safety-margin').value = savedData['margin'] !== undefined ? savedData['margin'] : 25;
+
+        MASTER_CATALOG.forEach((item, index) => {
+            let savedQty = savedData[item.alias] || "";
+            document.getElementById(`setup-qty-${index}`).value = savedQty;
+        });
+    }
+
+    function deleteTemplate() {
+        const name = document.getElementById('template-select').value;
+        if (!name) return;
+        if(!confirm(`Are you sure you want to delete the template "${name}"?`)) return;
+
+        const templates = getSavedTemplates();
+        delete templates[name];
+        saveTemplates(templates);
+        populateTemplateDropdown();
+    }
+
+    // NEW: Sync via Clipboard
+    function exportTemplates() {
+        const templates = localStorage.getItem('wheelTemplates');
+        if (!templates || templates === '{}') {
+            alert("You have no saved templates to export yet. Save one first!");
+            return;
+        }
+        navigator.clipboard.writeText(templates).then(() => {
+            alert("✅ Sync Code copied to clipboard!\n\nEmail or text this code to your other device. Then click 'Import Sync Code' on that device to load them.");
+        }).catch(err => {
+            alert("Failed to copy. Here is your code to copy manually:\n\n" + templates);
+        });
+    }
+
+    function importTemplates() {
+        const input = prompt("Paste your Sync Code here to load your templates:");
+        if (!input) return;
+        
+        try {
+            const parsed = JSON.parse(input);
+            if (typeof parsed === 'object') {
+                // Merge imported templates with existing ones
+                const currentTemplates = getSavedTemplates();
+                const mergedTemplates = { ...currentTemplates, ...parsed };
+                saveTemplates(mergedTemplates);
+                populateTemplateDropdown();
+                alert("✅ Templates imported successfully!");
+            }
+        } catch (e) {
+            alert("❌ Invalid code. Please make sure you copied the exact code from your other device.");
+        }
+    }
+
+    // ==========================================
+    // 4. SETUP & AUTO-SAVE LOGIC
+    // ==========================================
+    window.onload = function() {
+        renderSetupList();
+        populateTemplateDropdown();
+    };
+
+    function renderSetupList() {
+        let container = document.getElementById('catalog-setup-list');
+        let html = '';
+        let savedData = JSON.parse(localStorage.getItem('wheelAutoSave')) || {};
+
+        if (savedData['misses_qty'] !== undefined) document.getElementById('miss-qty').value = savedData['misses_qty'];
+        if (savedData['misses_val'] !== undefined) document.getElementById('miss-val').value = savedData['misses_val'];
+        if (savedData['margin'] !== undefined) document.getElementById('safety-margin').value = savedData['margin'];
+
+        MASTER_CATALOG.forEach((item, index) => {
+            let savedQty = savedData[item.alias] || ""; 
+            
+            html += `
+                <div class="setup-row">
+                    <input type="text" value="${item.alias}" readonly style="flex: 2;">
+                    <input type="text" class="val-display" value="$${item.value}" readonly style="flex: 1;">
+                    <input type="number" id="setup-qty-${index}" class="catalog-qty-input" placeholder="Qty" value="${savedQty}" min="0" style="flex: 1; text-align: center; font-weight: bold; background-color: #444;">
+                    <input type="hidden" id="setup-val-${index}" value="${item.value}">
+                    <input type="hidden" id="setup-alias-${index}" value="${item.alias}">
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function clearSavedData() {
+        if(confirm("Erase your auto-save session? (This will NOT delete your saved profiles).")) {
+            localStorage.removeItem('wheelAutoSave');
+            location.reload();
+        }
     }
 
     function editWheel(resetAll) {
         if (resetAll) {
             if (!confirm("Are you sure you want to start a new wheel? This will reset your PnL and Streaks.")) return;
-            
-            mySpent = 0;
-            myValueWon = 0;
-            currentMissStreak = 0;
-            streakHistoryStack = [];
-            
+            mySpent = 0; myValueWon = 0; currentMissStreak = 0; streakHistoryStack = [];
             document.getElementById('live-stream-price').value = "";
             document.getElementById('i-won-checkbox').checked = false;
             document.getElementById('my-bid-amount').value = "";
             highlightWinZone();
         }
-
         document.getElementById('tracker-view').style.display = 'none';
         document.getElementById('setup-view').style.display = 'block';
         window.scrollTo(0, 0); 
     }
 
     function startTracker() {
+        let saveData = {}; 
+
         inventory.misses.qty = parseInt(document.getElementById('miss-qty').value) || 0;
         inventory.misses.value = parseFloat(document.getElementById('miss-val').value) || 0;
         inventory.misses.alias = document.getElementById('miss-alias').value;
+        
+        saveData['misses_qty'] = inventory.misses.qty;
+        saveData['misses_val'] = inventory.misses.value;
 
         inventory.hits = {};
 
-        const selects = document.getElementsByClassName('hit-alias-select');
-        const hitQtys = document.getElementsByClassName('hit-qty-input');
-        const hitVals = document.getElementsByClassName('hit-val-input');
+        MASTER_CATALOG.forEach((item, index) => {
+            let alias = document.getElementById(`setup-alias-${index}`).value;
+            let qty = parseInt(document.getElementById(`setup-qty-${index}`).value) || 0;
+            let val = parseFloat(document.getElementById(`setup-val-${index}`).value) || 0;
 
-        for (let i = 0; i < selects.length; i++) {
-            let alias = selects[i].value;
-            let qty = parseInt(hitQtys[i].value) || 0;
-            let val = parseFloat(hitVals[i].value) || 0;
-
-            if (alias && qty > 0) {
-                if (inventory.hits[alias]) {
-                    inventory.hits[alias].qty += qty;
-                } else {
-                    inventory.hits[alias] = { value: val, qty: qty };
-                }
+            if (qty > 0) {
+                inventory.hits[alias] = { value: val, qty: qty };
+                saveData[alias] = qty; 
             }
-        }
+        });
 
         const marginInput = parseFloat(document.getElementById('safety-margin').value) || 0;
+        saveData['margin'] = marginInput;
         document.getElementById('display-margin').innerText = marginInput;
         marginMultiplier = (100 - marginInput) / 100;
+
+        localStorage.setItem('wheelAutoSave', JSON.stringify(saveData));
 
         document.getElementById('setup-view').style.display = 'none';
         document.getElementById('tracker-view').style.display = 'block';
@@ -321,7 +426,7 @@
     }
 
     // ==========================================
-    // 4. INTERACTIVE INVENTORY LOGIC (WITH STREAK MEMORY)
+    // 5. INTERACTIVE INVENTORY LOGIC
     // ==========================================
     function modifyInventory(itemKey, change) {
         let item;
@@ -376,12 +481,12 @@
     }
 
     // ==========================================
-    // 5. DASHBOARD RENDER & MATH
+    // 6. DASHBOARD RENDER & MATH
     // ==========================================
     function updateDashboard() {
         let totalValue = 0;
         let totalItems = 0;
-        let totalHitsQty = 0; // NEW: Track total hits for probability
+        let totalHitsQty = 0; 
 
         totalValue += (inventory.misses.qty * inventory.misses.value);
         totalItems += inventory.misses.qty;
@@ -392,7 +497,6 @@
             totalHitsQty += inventory.hits[alias].qty;
         }
 
-        // EV and Probability Math
         let hitProb = 0;
         if (totalItems <= 0) {
             currentEVValue = 0;
@@ -404,7 +508,6 @@
             hitProb = (totalHitsQty / totalItems) * 100;
             document.getElementById('items-left').innerText = totalItems;
             
-            // Render Hit Probability with Colors
             let probEl = document.getElementById('hit-probability');
             probEl.innerText = `${hitProb.toFixed(1)}%`;
             if (hitProb >= 50) {
@@ -450,7 +553,7 @@
     }
 
     // ==========================================
-    // 6. PERSONAL WIN LOGIC
+    // 7. PERSONAL WIN LOGIC
     // ==========================================
     function highlightWinZone() {
         const zone = document.getElementById('win-zone');
@@ -479,7 +582,7 @@
     }
 
     // ==========================================
-    // 7. LIVE DEAL CHECKER
+    // 8. LIVE DEAL CHECKER
     // ==========================================
     function checkDeal() {
         const streamPrice = parseFloat(document.getElementById('live-stream-price').value);
@@ -503,7 +606,7 @@
     }
 
     // ==========================================
-    // 8. KEYBOARD SHORTCUTS
+    // 9. KEYBOARD SHORTCUTS
     // ==========================================
     document.addEventListener('keydown', function(event) {
         if (document.getElementById('tracker-view').style.display === 'block') {
