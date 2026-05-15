@@ -43,7 +43,10 @@
         .text-secondary { color: var(--secondary); }
         
         .personal-ledger { background-color: #2a2a35; padding: 15px; border-radius: 8px; margin-top: 20px;}
-        .ledger-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
+        
+        /* Updated Grid to 4 Columns for ROI */
+        .ledger-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; text-align: center; margin-top: 10px; }
+        
         .toggle-group { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; background-color: #333; padding: 15px; border-radius: 5px; border: 2px solid transparent; transition: border 0.3s;}
         .toggle-group.active { border: 2px solid var(--primary); background-color: rgba(76, 175, 80, 0.1); }
         .streak-container { text-align: center; margin-bottom: 15px; font-size: 16px; background-color: #1a1a1a; padding: 10px; border-radius: 5px;}
@@ -91,7 +94,6 @@
                 <button onclick="saveTemplate()" style="background-color: var(--primary); color: white; flex: 1;">Save</button>
             </div>
 
-            <!-- NEW: EXPORT & IMPORT -->
             <div style="display: flex; gap: 10px; border-top: 1px solid #444; padding-top: 15px;">
                 <button class="btn-secondary btn-small" onclick="exportTemplates()" style="flex: 1; background-color: #555;">📤 Export Sync Code</button>
                 <button class="btn-secondary btn-small" onclick="importTemplates()" style="flex: 1; background-color: #555;">📥 Import Sync Code</button>
@@ -182,6 +184,8 @@
                 <div><div style="font-size: 12px;">Spent</div><div id="total-spent" style="font-weight: bold; font-size: 18px;">$0</div></div>
                 <div><div style="font-size: 12px;">Value</div><div id="value-won" style="font-weight: bold; font-size: 18px;">$0</div></div>
                 <div><div style="font-size: 12px;">Net PnL</div><div id="net-pnl" style="font-weight: bold; font-size: 18px;">$0</div></div>
+                <!-- NEW: Session ROI -->
+                <div><div style="font-size: 12px;">Session ROI</div><div id="session-roi" style="font-weight: bold; font-size: 18px;">0.0%</div></div>
             </div>
         </div>
         
@@ -212,11 +216,7 @@
         { alias: "Mega Evolution ETB Gardevoir", value: 80 },
         { alias: "Team Rocket's Moltres Ex Ultra Premium Collection Box", value: 280 },
         { alias: "Prismatic SPC", value: 288 },
-        { alias: "Black Bolt ETB", value: 120 },
-        { alias: "Paradox Rift ETB Roaring Moon", value: 115 },
-        { alias: "Lost Origin ETB", value: 200 },
-        { alias: "SWSH Charizard UPC", value: 495 },
-        { alias: "Evolving Skies ETB", value: 470 }
+        { alias: "Pokemon Day 2026 Collection Box", value: 26}
     ];
 
     // ==========================================
@@ -302,7 +302,6 @@
         populateTemplateDropdown();
     }
 
-    // NEW: Sync via Clipboard
     function exportTemplates() {
         const templates = localStorage.getItem('wheelTemplates');
         if (!templates || templates === '{}') {
@@ -323,7 +322,6 @@
         try {
             const parsed = JSON.parse(input);
             if (typeof parsed === 'object') {
-                // Merge imported templates with existing ones
                 const currentTemplates = getSavedTemplates();
                 const mergedTemplates = { ...currentTemplates, ...parsed };
                 saveTemplates(mergedTemplates);
@@ -536,12 +534,27 @@
         });
         document.getElementById('inventory-list').innerHTML = invHtml;
 
+        // PnL & ROI Calculations
         document.getElementById('total-spent').innerText = `$${mySpent.toFixed(2)}`;
         document.getElementById('value-won').innerText = `$${myValueWon.toFixed(2)}`;
+        
         let net = myValueWon - mySpent;
         let pnlElement = document.getElementById('net-pnl');
         pnlElement.innerText = `$${net.toFixed(2)}`;
-        if (net > 0) { pnlElement.className = "text-green"; } else if (net < 0) { pnlElement.className = "text-red"; } else { pnlElement.className = ""; }
+        if (net > 0) { pnlElement.className = "text-green"; } 
+        else if (net < 0) { pnlElement.className = "text-red"; } 
+        else { pnlElement.className = ""; }
+
+        // NEW: Session ROI Calculation
+        let sessionROI = 0;
+        if (mySpent > 0) {
+            sessionROI = (net / mySpent) * 100;
+        }
+        let roiElement = document.getElementById('session-roi');
+        roiElement.innerText = `${sessionROI.toFixed(1)}%`;
+        if (sessionROI > 0) { roiElement.className = "text-green"; } 
+        else if (sessionROI < 0) { roiElement.className = "text-red"; } 
+        else { roiElement.className = ""; }
 
         let streakEl = document.getElementById('streak-counter');
         streakEl.innerText = currentMissStreak;
